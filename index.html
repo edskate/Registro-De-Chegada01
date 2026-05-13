@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Chegada - Horário Travado</title>
+
+<style>
+:root{
+  --gold:#d4af37;
+  --green:#00ff66;
+  --red:#ff3b3b;
+  --yellow:#ffcc00;
+  --card:#101010;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:linear-gradient(180deg,#000,#111);
+  color:white;
+  padding:15px;
+}
+
+header,.card{
+  background:#080808;
+  border:2px solid var(--gold);
+  border-radius:18px;
+  padding:15px;
+  margin-bottom:15px;
+  box-shadow:0 0 18px rgba(212,175,55,.18);
+}
+
+h1,h2{
+  color:var(--gold);
+  text-align:center;
+}
+
+p{
+  line-height:1.5;
+}
+
+.relogio{
+  text-align:center;
+  font-size:2.4rem;
+  font-weight:bold;
+  color:var(--green);
+  background:#000;
+  border:1px solid var(--green);
+  border-radius:14px;
+  padding:14px;
+  margin-top:12px;
+}
+
+.dataAtual{
+  text-align:center;
+  color:#ddd;
+  margin-top:8px;
+}
+
+input,select,textarea{
+  width:100%;
+  padding:11px;
+  margin:6px 0 12px;
+  border-radius:8px;
+  border:none;
+  font-size:1rem;
+}
+
+input[readonly]{
+  background:#222;
+  color:#fff;
+  border:1px solid #555;
+}
+
+textarea{
+  min-height:75px;
+}
+
+button{
+  background:var(--gold);
+  color:#000;
+  border:none;
+  padding:13px;
+  border-radius:10px;
+  font-weight:bold;
+  margin:5px 0;
+  width:100%;
+  cursor:pointer;
+  font-size:1rem;
+}
+
+button:hover{
+  filter:brightness(1.08);
+}
+
+.btnChegada{
+  background:var(--green);
+  font-size:1.1rem;
+}
+
+.btnLimpar{
+  background:var(--red);
+  color:white;
+}
+
+.registro{
+  border:1px solid var(--gold);
+  border-radius:12px;
+  padding:12px;
+  margin:12px 0;
+  background:#151515;
+}
+
+.ok{
+  color:var(--green);
+  font-weight:bold;
+}
+
+.atrasado{
+  color:var(--red);
+  font-weight:bold;
+}
+
+.resumo{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  text-align:center;
+}
+
+.boxResumo{
+  background:#000;
+  border:1px solid var(--gold);
+  border-radius:12px;
+  padding:12px;
+}
+
+.boxResumo strong{
+  display:block;
+  color:var(--gold);
+  font-size:1.6rem;
+}
+
+.aviso{
+  background:#1b1b1b;
+  border-left:5px solid var(--gold);
+  padding:12px;
+  border-radius:10px;
+  margin-top:10px;
+}
+
+@media(max-width:700px){
+  .resumo{grid-template-columns:1fr;}
+  .relogio{font-size:1.8rem;}
+}
+
+@media print{
+  button,input,select,textarea,.noPrint{
+    display:none !important;
+  }
+  body{
+    background:white;
+    color:black;
+  }
+  header,.card,.registro,.boxResumo{
+    background:white;
+    color:black;
+    border:1px solid black;
+    box-shadow:none;
+  }
+  h1,h2{
+    color:black;
+  }
+  .relogio{
+    color:black;
+    border:1px solid black;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>⏱ Controle de Chegada</h1>
+  <p>Programa para registrar a chegada da equipe em tempo real. O horário da chegada é capturado automaticamente pelo relógio do sistema e fica salvo sem alteração manual.</p>
+  <div class="relogio" id="relogio">00:00:00</div>
+  <div class="dataAtual" id="dataAtual"></div>
+</header>
+
+<div class="card">
+<h2>📋 Registro de Chegada</h2>
+
+<div class="aviso">
+  <strong>Regra do horário:</strong><br>
+  O horário limite é <strong>20:00</strong>. Se a chegada passar das 20:00, o programa registra o horário real conforme o relógio e mostra o status <strong>Chegou Atrasado</strong> com a contagem de minutos de atraso.
+</div>
+
+<label>Nome do Integrante</label>
+<input id="nome" placeholder="Digite o nome do integrante">
+
+<label>Função</label>
+<select id="funcao">
+  <option>Dançarino</option>
+  <option>Assistente de palco</option>
+  <option>Iluminação e som</option>
+  <option>Artista principal</option>
+  <option>Produtor</option>
+  <option>Outro</option>
+</select>
+
+<label>Horário limite de chegada</label>
+<input id="horaLimite" type="text" value="20:00" readonly>
+
+<label>Horário real registrado</label>
+<input id="horaRegistrada" type="text" value="Será registrado automaticamente pelo relógio" readonly>
+
+<label>Observação</label>
+<textarea id="observacao" placeholder="Digite uma observação opcional..."></textarea>
+
+<button class="btnChegada" onclick="registrarChegada()">✅ Registrar Chegada Agora</button>
+<button onclick="window.print()">📄 Salvar / Imprimir em PDF</button>
+<button class="btnLimpar" onclick="limparHistorico()">🗑 Limpar Histórico</button>
+</div>
+
+<div class="card">
+<h2>📊 Resumo do Dia</h2>
+<div class="resumo">
+  <div class="boxResumo">Dentro do Horário<strong id="totalNoHorario">0</strong></div>
+  <div class="boxResumo">Atrasados<strong id="totalAtrasados">0</strong></div>
+  <div class="boxResumo">Total de Registros<strong id="totalRegistros">0</strong></div>
+</div>
+</div>
+
+<div class="card">
+<h2>📜 Histórico de Chegadas</h2>
+<div id="historico"></div>
+</div>
+
+<script>
+const HORA_LIMITE = "20:00";
+
+function doisDigitos(n){
+  return String(n).padStart(2,"0");
+}
+
+function agoraCompleto(){
+  const agora = new Date();
+  const data = `${agora.getFullYear()}-${doisDigitos(agora.getMonth()+1)}-${doisDigitos(agora.getDate())}`;
+  const horaCompleta = `${doisDigitos(agora.getHours())}:${doisDigitos(agora.getMinutes())}:${doisDigitos(agora.getSeconds())}`;
+  const horaCurta = `${doisDigitos(agora.getHours())}:${doisDigitos(agora.getMinutes())}`;
+  return {agora,data,horaCompleta,horaCurta};
+}
+
+function atualizarRelogio(){
+  const {agora,horaCompleta} = agoraCompleto();
+  document.getElementById("relogio").textContent = horaCompleta;
+  document.getElementById("dataAtual").textContent = agora.toLocaleDateString("pt-BR",{
+    weekday:"long",
+    day:"2-digit",
+    month:"long",
+    year:"numeric"
+  });
+}
+
+setInterval(atualizarRelogio,1000);
+atualizarRelogio();
+
+function minutosDaHora(hora){
+  const [h,m] = hora.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function verificarStatus(horaChegada){
+  const chegada = minutosDaHora(horaChegada);
+  const limite = minutosDaHora(HORA_LIMITE);
+
+  if(chegada <= limite){
+    return {
+      status:"Chegou dentro do horário",
+      classe:"ok",
+      minutosAtraso:0
+    };
+  }
+
+  return {
+    status:"Chegou Atrasado",
+    classe:"atrasado",
+    minutosAtraso:(chegada - limite)
+  };
+}
+
+function getRegistros(){
+  return JSON.parse(localStorage.getItem("controleChegadaHorarioTravado") || "[]");
+}
+
+function setRegistros(registros){
+  localStorage.setItem("controleChegadaHorarioTravado", JSON.stringify(registros));
+}
+
+function registrarChegada(){
+  const nome = document.getElementById("nome").value.trim();
+  const funcao = document.getElementById("funcao").value;
+  const observacao = document.getElementById("observacao").value.trim() || "-";
+
+  if(!nome){
+    alert("Digite o nome do integrante antes de registrar a chegada.");
+    return;
+  }
+
+  const {data,horaCompleta,horaCurta} = agoraCompleto();
+  const resultado = verificarStatus(horaCurta);
+
+  document.getElementById("horaRegistrada").value = horaCompleta;
+
+  const registro = {
+    id:Date.now(),
+    nome,
+    funcao,
+    data,
+    horaRegistrada:horaCompleta,
+    horaLimite:HORA_LIMITE,
+    status:resultado.status,
+    classe:resultado.classe,
+    minutosAtraso:resultado.minutosAtraso,
+    observacao
+  };
+
+  const registros = getRegistros();
+  registros.unshift(registro);
+  setRegistros(registros);
+
+  carregarHistorico();
+
+  document.getElementById("nome").value = "";
+  document.getElementById("observacao").value = "";
+  document.getElementById("horaRegistrada").value = "Será registrado automaticamente pelo relógio";
+
+  alert("✅ Chegada registrada com horário travado conforme o relógio!");
+}
+
+function carregarHistorico(){
+  const registros = getRegistros();
+  const historico = document.getElementById("historico");
+
+  if(registros.length === 0){
+    historico.innerHTML = "<p>Nenhum registro salvo ainda.</p>";
+    atualizarResumo([]);
+    return;
+  }
+
+  historico.innerHTML = registros.map(r => `
+    <div class="registro">
+      <h3>📌 Registro de Chegada</h3>
+      <p><strong>Nome:</strong> ${r.nome}</p>
+      <p><strong>Função:</strong> ${r.funcao}</p>
+      <p><strong>Data:</strong> ${formatarDataBR(r.data)}</p>
+      <p><strong>Horário limite:</strong> ${r.horaLimite}</p>
+      <p><strong>Horário real da chegada:</strong> ${r.horaRegistrada}</p>
+      <p><strong>Status:</strong> <span class="${r.classe}">${r.status}</span></p>
+      <p><strong>Contagem de atraso:</strong> ${r.minutosAtraso > 0 ? '<span class="atrasado">' + r.minutosAtraso + ' minuto(s) de atraso</span>' : '<span class="ok">0 minuto(s) — dentro do horário</span>'}</p>
+      <p><strong>Observação:</strong> ${r.observacao}</p>
+    </div>
+  `).join("");
+
+  atualizarResumo(registros);
+}
+
+function atualizarResumo(registros){
+  const hoje = agoraCompleto().data;
+  const registrosHoje = registros.filter(r => r.data === hoje);
+
+  const noHorario = registrosHoje.filter(r => r.minutosAtraso === 0).length;
+  const atrasados = registrosHoje.filter(r => r.minutosAtraso > 0).length;
+
+  document.getElementById("totalNoHorario").textContent = noHorario;
+  document.getElementById("totalAtrasados").textContent = atrasados;
+  document.getElementById("totalRegistros").textContent = registrosHoje.length;
+}
+
+function formatarDataBR(dataISO){
+  if(!dataISO) return "-";
+  const [ano,mes,dia] = dataISO.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
+function limparHistorico(){
+  if(confirm("Deseja apagar todo o histórico de chegada?")){
+    localStorage.removeItem("controleChegadaHorarioTravado");
+    carregarHistorico();
+  }
+}
+
+window.onload = carregarHistorico;
+</script>
+<hr>
+<a href="index10.html"><h2>Próxima Página</h2></a>
+</body>
+</html>
