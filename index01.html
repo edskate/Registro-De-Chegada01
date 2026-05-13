@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Organização de Figurinos</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:linear-gradient(180deg,#000,#111);
+  color:white;
+  padding:15px;
+}
+header,.card{
+  background:#080808;
+  border:2px solid gold;
+  border-radius:18px;
+  padding:15px;
+  margin-bottom:15px;
+}
+h1,h2{
+  color:gold;
+  text-align:center;
+}
+input,select,textarea{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border-radius:8px;
+  border:none;
+}
+textarea{
+  min-height:80px;
+}
+button{
+  background:gold;
+  color:#000;
+  border:none;
+  padding:12px;
+  border-radius:10px;
+  font-weight:bold;
+  margin:5px 0;
+  width:100%;
+  cursor:pointer;
+}
+video,canvas,img{
+  width:100%;
+  border-radius:12px;
+  border:1px solid gold;
+  margin-top:10px;
+}
+.registro{
+  border:1px solid gold;
+  border-radius:12px;
+  padding:12px;
+  margin:12px 0;
+  background:#151515;
+}
+.erro{
+  color:#ffcc00;
+  font-weight:bold;
+}
+@media print{
+  button,video{
+    display:none;
+  }
+  body{
+    background:white;
+    color:black;
+  }
+  header,.card,.registro{
+    background:white;
+    color:black;
+    border:1px solid black;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>📸 Registro de Organização de Figurinos</h1>
+  <p>Controle de erros de figurino, itens deixados desorganizados e vestimento fora do padrão do show.</p>
+</header>
+
+<div class="card">
+<h2>🎥 Câmera em Tempo Real</h2>
+
+<video id="camera" autoplay playsinline></video>
+<canvas id="fotoCanvas" style="display:none;"></canvas>
+
+<button onclick="abrirCamera()">📷 Abrir Câmera</button>
+<button onclick="tirarFoto()">✅ Tirar Foto do Registro</button>
+
+<img id="preview" style="display:none;">
+</div>
+
+<div class="card">
+<h2>📝 Dados da Ocorrência</h2>
+
+<label>Nome do Dançarino</label>
+<input id="nome" placeholder="Ex: Abizael, Renan">
+
+<label>Data</label>
+<input id="data" type="date">
+
+<label>Hora da Chegada Para organização.</label>
+<input id="hora" type="time">
+
+<label>Tipo de Ocorrência</label>
+<select id="tipo">
+  <option>Figurino fora do padrão do show</option>
+  <option>Atitude(falta de interece de Alinhamento Com o Show.)</option>
+  <option>Item deixado sujo ou danificado sem Comunicação.</option>
+  <option>Item deixado desorganizado</option>
+  <option>Acessório esquecido</option>
+  <option>Roupa fora da sequência</option>
+  <option>Sapato ou item mal cuidado</option>
+  <option>Figurino deixado no camarim</option>
+  <option>Erro de vestimento</option>
+  <option>Chegada Atrazado para o Pocket Show.</option>
+  <option>Chegada Atrazado Para Organização e Revisão de Figurino e Acessorios, Alinhamento da equipe Para Organização do show .</option>
+  <option>Outro</option>
+</select>
+
+<label>Grau da Ocorrência</label>
+<select id="grau">
+  <option>Leve</option>
+  <option>Médio</option>
+  <option>Grave</option>
+</select>
+
+<label>Descrição do Problema</label>
+<textarea id="descricao" placeholder="Descreva o que aconteceu..."></textarea>
+
+<label>Correção Necessária</label>
+<textarea id="correcao" placeholder="Ex: organizar figurino, revisar acessório, corrigir padrão visual..."></textarea>
+
+<button onclick="salvarRegistro()">💾 Salvar Registro no Histórico</button>
+<button onclick="window.print()">📄 Salvar / Imprimir em PDF</button>
+<button onclick="limparHistorico()">🗑 Limpar Histórico</button>
+</div>
+
+<div class="card">
+<h2>📜 Histórico de Registros</h2>
+<div id="historico"></div>
+</div>
+
+<script>
+let fotoBase64 = "";
+
+function dataHoraAtual(){
+  const agora = new Date();
+
+  document.getElementById("data").value =
+    agora.toISOString().split("T")[0];
+
+  document.getElementById("hora").value =
+    agora.toTimeString().slice(0,5);
+}
+
+async function abrirCamera(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"environment" },
+      audio:false
+    });
+
+    document.getElementById("camera").srcObject = stream;
+  }catch(e){
+    alert("Não foi possível abrir a câmera. Verifique a permissão do navegador.");
+  }
+}
+
+function tirarFoto(){
+  const video = document.getElementById("camera");
+  const canvas = document.getElementById("fotoCanvas");
+  const preview = document.getElementById("preview");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+  fotoBase64 = canvas.toDataURL("image/png");
+
+  preview.src = fotoBase64;
+  preview.style.display = "block";
+
+  alert("📸 Foto registrada!");
+}
+
+function salvarRegistro(){
+  const nome = document.getElementById("nome").value || "-";
+  const data = document.getElementById("data").value || "-";
+  const hora = document.getElementById("hora").value || "-";
+  const tipo = document.getElementById("tipo").value;
+  const grau = document.getElementById("grau").value;
+  const descricao = document.getElementById("descricao").value || "-";
+  const correcao = document.getElementById("correcao").value || "-";
+
+  if(!fotoBase64){
+    alert("Tire uma foto antes de salvar o registro.");
+    return;
+  }
+
+  const registro = `
+    <div class="registro">
+      <h3>📌 Registro de Ocorrência</h3>
+      <p><strong>Dançarino:</strong> ${nome}</p>
+      <p><strong>Data:</strong> ${data}</p>
+      <p><strong>Hora:</strong> ${hora}</p>
+      <p><strong>Tipo:</strong> <span class="erro">${tipo}</span></p>
+      <p><strong>Grau:</strong> ${grau}</p>
+      <p><strong>Descrição:</strong> ${descricao}</p>
+      <p><strong>Correção necessária:</strong> ${correcao}</p>
+      <img src="${fotoBase64}">
+    </div>
+  `;
+
+  const antigo = localStorage.getItem("historicoFigurino") || "";
+  localStorage.setItem("historicoFigurino", registro + antigo);
+
+  carregarHistorico();
+
+  document.getElementById("nome").value = "";
+  document.getElementById("descricao").value = "";
+  document.getElementById("correcao").value = "";
+  document.getElementById("preview").style.display = "none";
+  fotoBase64 = "";
+
+  alert("✅ Registro salvo no histórico!");
+}
+
+function carregarHistorico(){
+  document.getElementById("historico").innerHTML =
+    localStorage.getItem("historicoFigurino") || "<p>Nenhum registro salvo ainda.</p>";
+}
+
+function limparHistorico(){
+  if(confirm("Deseja apagar todos os registros salvos?")){
+    localStorage.removeItem("historicoFigurino");
+    carregarHistorico();
+  }
+}
+
+window.onload = function(){
+  dataHoraAtual();
+  carregarHistorico();
+};
+</script>
+<hr>
+<a href="index05.html"><h2>Próxima Página</h2></a>
+</body>
+</html>
